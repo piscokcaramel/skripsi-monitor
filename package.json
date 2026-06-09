@@ -1,0 +1,19 @@
+{
+  "name": "skripsi-monitor",
+  "version": "1.0.0",
+  "description": "Sistem monitoring ujian skripsi real-time berbasis WebRTC + PWA",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "keywords": ["webrtc", "monitoring", "pwa", "skripsi"],
+  "author": "SkripsiMonitor",
+  "license": "MIT"
+}

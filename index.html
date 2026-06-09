@@ -1,0 +1,981 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#6C63FF">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="SkripsiMonitor">
+<title>SkripsiMonitor</title>
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" href="/icon-192.png">
+<style>
+  :root {
+    --bg: #0f1117;
+    --bg2: #1a1d27;
+    --bg3: #22263a;
+    --accent: #6C63FF;
+    --accent2: #9F97FF;
+    --green: #22c55e;
+    --red: #ef4444;
+    --amber: #f59e0b;
+    --text: #f0f0f8;
+    --text2: #9ca3c4;
+    --border: rgba(108,99,255,0.2);
+    --radius: 16px;
+    --shadow: 0 4px 24px rgba(0,0,0,0.4);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ===== SCREEN SYSTEM ===== */
+  .screen { display: none; min-height: 100vh; }
+  .screen.active { display: flex; flex-direction: column; }
+
+  /* ===== LOGIN SCREEN ===== */
+  #screen-login {
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: radial-gradient(ellipse at 60% 20%, rgba(108,99,255,0.15) 0%, transparent 60%), var(--bg);
+  }
+
+  .login-logo {
+    width: 72px; height: 72px;
+    background: linear-gradient(135deg, var(--accent), #a78bfa);
+    border-radius: 20px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 32px; margin-bottom: 20px;
+    box-shadow: 0 0 32px rgba(108,99,255,0.4);
+  }
+
+  .login-title { font-size: 26px; font-weight: 700; letter-spacing: -0.5px; }
+  .login-sub { font-size: 14px; color: var(--text2); margin-top: 6px; margin-bottom: 36px; }
+
+  .login-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 28px 24px;
+    width: 100%; max-width: 380px;
+    box-shadow: var(--shadow);
+  }
+
+  .role-tabs {
+    display: flex; gap: 8px; margin-bottom: 24px;
+  }
+
+  .role-tab {
+    flex: 1; padding: 10px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text2);
+    font-size: 14px; font-weight: 500;
+    cursor: pointer; transition: all 0.2s;
+    text-align: center;
+  }
+
+  .role-tab.selected {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+
+  .form-group { margin-bottom: 16px; }
+
+  .form-group label {
+    display: block; font-size: 12px;
+    color: var(--text2); margin-bottom: 6px;
+    font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase;
+  }
+
+  .form-group input, .form-group select {
+    width: 100%; padding: 12px 14px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    font-size: 15px;
+    outline: none; transition: border-color 0.2s;
+  }
+
+  .form-group input:focus, .form-group select:focus {
+    border-color: var(--accent);
+  }
+
+  .form-group input::placeholder { color: var(--text2); }
+
+  .form-group select { appearance: none; cursor: pointer; }
+
+  .btn-primary {
+    width: 100%; padding: 14px;
+    background: var(--accent);
+    border: none; border-radius: 12px;
+    color: #fff; font-size: 16px; font-weight: 600;
+    cursor: pointer; transition: all 0.2s;
+    margin-top: 8px;
+  }
+
+  .btn-primary:active { transform: scale(0.97); }
+
+  .error-msg {
+    background: rgba(239,68,68,0.12);
+    border: 1px solid rgba(239,68,68,0.3);
+    border-radius: 8px; padding: 10px 12px;
+    font-size: 13px; color: #fca5a5;
+    margin-bottom: 16px; display: none;
+  }
+
+  /* ===== MAIN APP SCREEN ===== */
+  #screen-app {
+    background: var(--bg);
+    flex-direction: column;
+  }
+
+  /* Header */
+  .app-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 16px;
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; z-index: 100;
+  }
+
+  .header-left { display: flex; align-items: center; gap: 10px; }
+
+  .status-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--red); transition: background 0.3s;
+  }
+
+  .status-dot.online { background: var(--green); }
+
+  .header-title { font-size: 16px; font-weight: 600; }
+  .header-room { font-size: 11px; color: var(--text2); }
+
+  .header-right { display: flex; gap: 8px; }
+
+  .btn-icon {
+    width: 36px; height: 36px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    font-size: 18px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; transition: all 0.2s;
+  }
+
+  .btn-icon:active { transform: scale(0.93); }
+  .btn-icon.danger { background: rgba(239,68,68,0.15); border-color: rgba(239,68,68,0.3); color: #fca5a5; }
+
+  /* Video area */
+  .video-container {
+    position: relative;
+    flex: 1;
+    background: #000;
+    overflow: hidden;
+    min-height: 260px;
+  }
+
+  #remoteVideo {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  #localVideo {
+    position: absolute;
+    bottom: 12px; right: 12px;
+    width: 110px; height: 80px;
+    border-radius: 12px;
+    object-fit: cover;
+    border: 2px solid var(--accent);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.6);
+    z-index: 10;
+  }
+
+  .video-overlay {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--bg);
+    flex-direction: column; gap: 12px;
+    font-size: 14px; color: var(--text2);
+  }
+
+  .video-overlay .pulse-ring {
+    width: 64px; height: 64px; border-radius: 50%;
+    background: var(--bg3);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 28px; position: relative;
+  }
+
+  .pulse-ring::before {
+    content: '';
+    position: absolute; inset: -6px;
+    border-radius: 50%;
+    border: 2px solid var(--accent);
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0% { opacity: 1; transform: scale(1); }
+    100% { opacity: 0; transform: scale(1.5); }
+  }
+
+  /* Controls bar */
+  .controls-bar {
+    padding: 14px 16px;
+    background: var(--bg2);
+    border-top: 1px solid var(--border);
+    display: flex; flex-direction: column; gap: 12px;
+  }
+
+  .controls-row {
+    display: flex; align-items: center; justify-content: center;
+    gap: 12px;
+  }
+
+  .ctrl-btn {
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px 16px;
+    color: var(--text);
+    cursor: pointer;
+    transition: all 0.2s;
+    min-width: 72px;
+    font-size: 11px; color: var(--text2);
+    font-weight: 500;
+  }
+
+  .ctrl-btn .icon { font-size: 22px; margin-bottom: 2px; }
+  .ctrl-btn:active { transform: scale(0.94); }
+  .ctrl-btn.active { background: rgba(108,99,255,0.2); border-color: var(--accent); }
+  .ctrl-btn.off { background: rgba(239,68,68,0.12); border-color: rgba(239,68,68,0.3); }
+  .ctrl-btn.off .icon { filter: grayscale(0.5); }
+
+  .end-call-btn {
+    background: var(--red) !important;
+    border-color: var(--red) !important;
+    color: #fff !important;
+  }
+
+  /* Connection status banner */
+  .conn-banner {
+    background: rgba(245,158,11,0.12);
+    border-bottom: 1px solid rgba(245,158,11,0.25);
+    padding: 8px 16px;
+    font-size: 12px; color: #fbbf24;
+    text-align: center; display: none;
+  }
+
+  /* Notif toast */
+  .toast {
+    position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%);
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px 20px;
+    font-size: 13px; color: var(--text);
+    box-shadow: var(--shadow);
+    z-index: 999;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.3s; white-space: nowrap;
+    max-width: 90vw;
+  }
+
+  .toast.show { opacity: 1; }
+
+  /* Audio visualizer */
+  .audio-bar {
+    display: flex; align-items: flex-end; gap: 2px;
+    height: 20px; padding: 0 2px;
+  }
+
+  .audio-bar span {
+    width: 3px; background: var(--accent2);
+    border-radius: 2px;
+    animation: audioPulse 0.8s ease-in-out infinite;
+  }
+
+  .audio-bar span:nth-child(1) { height: 6px; animation-delay: 0s; }
+  .audio-bar span:nth-child(2) { height: 14px; animation-delay: 0.1s; }
+  .audio-bar span:nth-child(3) { height: 10px; animation-delay: 0.2s; }
+  .audio-bar span:nth-child(4) { height: 18px; animation-delay: 0.15s; }
+  .audio-bar span:nth-child(5) { height: 8px; animation-delay: 0.05s; }
+
+  @keyframes audioPulse {
+    0%, 100% { transform: scaleY(0.4); opacity: 0.6; }
+    50% { transform: scaleY(1); opacity: 1; }
+  }
+
+  .audio-inactive span { animation: none; height: 3px !important; opacity: 0.3; }
+
+  /* Info panel */
+  .info-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 8px 16px;
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+    font-size: 12px;
+  }
+
+  .info-row .label { color: var(--text2); }
+  .info-row .val { color: var(--text); font-weight: 500; }
+
+  .badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: rgba(108,99,255,0.15);
+    border: 1px solid rgba(108,99,255,0.3);
+    border-radius: 6px; padding: 2px 8px;
+    font-size: 11px; color: var(--accent2);
+  }
+
+  .badge.green { background: rgba(34,197,94,0.12); border-color: rgba(34,197,94,0.3); color: #86efac; }
+  .badge.red { background: rgba(239,68,68,0.12); border-color: rgba(239,68,68,0.3); color: #fca5a5; }
+
+  /* PWA install prompt */
+  .install-banner {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: var(--bg2);
+    border-top: 1px solid var(--border);
+    padding: 16px;
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    z-index: 500; transform: translateY(100%);
+    transition: transform 0.3s;
+  }
+
+  .install-banner.show { transform: translateY(0); }
+  .install-banner p { font-size: 13px; color: var(--text2); flex: 1; }
+  .install-banner strong { color: var(--text); }
+
+  .btn-install {
+    padding: 8px 16px;
+    background: var(--accent);
+    border: none; border-radius: 8px;
+    color: #fff; font-size: 13px; font-weight: 600;
+    cursor: pointer; white-space: nowrap;
+  }
+
+  .btn-dismiss {
+    background: none; border: none;
+    color: var(--text2); font-size: 20px; cursor: pointer;
+    padding: 4px;
+  }
+</style>
+</head>
+<body>
+
+<!-- ===== LOGIN SCREEN ===== -->
+<div id="screen-login" class="screen active">
+  <div style="text-align:center">
+    <div class="login-logo">📡</div>
+    <div class="login-title">SkripsiMonitor</div>
+    <div class="login-sub">Sistem Pemantauan Ujian Real-Time</div>
+  </div>
+  <div class="login-card">
+    <div class="error-msg" id="loginError"></div>
+
+    <div class="form-group">
+      <label>Masuk Sebagai</label>
+      <div class="role-tabs">
+        <div class="role-tab selected" data-role="userA" onclick="selectRole('userA')">👤 User A</div>
+        <div class="role-tab" data-role="userB" onclick="selectRole('userB')">👤 User B</div>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Nama</label>
+      <input type="text" id="inputName" placeholder="Masukkan nama Anda" autocomplete="off">
+    </div>
+
+    <div class="form-group">
+      <label>Room ID</label>
+      <input type="text" id="inputRoom" placeholder="Kode room (misal: skripsi2025)" autocomplete="off">
+    </div>
+
+    <div class="form-group">
+      <label>Server URL</label>
+      <input type="text" id="inputServer" placeholder="ws://IP-SERVER:3000" autocomplete="off">
+    </div>
+
+    <button class="btn-primary" onclick="doLogin()">🚀 Hubungkan</button>
+
+    <p style="font-size:11px; color:var(--text2); text-align:center; margin-top:14px">
+      Izinkan kamera &amp; mikrofon saat diminta browser
+    </p>
+  </div>
+</div>
+
+<!-- ===== MAIN APP SCREEN ===== -->
+<div id="screen-app" class="screen">
+
+  <!-- Header -->
+  <div class="app-header">
+    <div class="header-left">
+      <div class="status-dot" id="statusDot"></div>
+      <div>
+        <div class="header-title" id="headerName">SkripsiMonitor</div>
+        <div class="header-room" id="headerRoom">Menghubungkan...</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <button class="btn-icon" title="Info" onclick="toggleInfo()">ℹ️</button>
+      <button class="btn-icon danger" title="Keluar" onclick="doLogout()">🔌</button>
+    </div>
+  </div>
+
+  <!-- Connection banner -->
+  <div class="conn-banner" id="connBanner">⏳ Menunggu partner terhubung...</div>
+
+  <!-- Info panel (collapsible) -->
+  <div id="infoPanel" style="display:none">
+    <div class="info-row">
+      <span class="label">Role saya</span>
+      <span class="val" id="infoRole">-</span>
+    </div>
+    <div class="info-row">
+      <span class="label">Room</span>
+      <span class="val" id="infoRoomId">-</span>
+    </div>
+    <div class="info-row">
+      <span class="label">Status partner</span>
+      <span class="val" id="infoPartner"><span class="badge red">Offline</span></span>
+    </div>
+    <div class="info-row">
+      <span class="label">Audio partner</span>
+      <div class="audio-bar audio-inactive" id="audioViz">
+        <span></span><span></span><span></span><span></span><span></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Video -->
+  <div class="video-container" id="videoContainer">
+    <video id="remoteVideo" autoplay playsinline></video>
+    <video id="localVideo" autoplay playsinline muted></video>
+    <div class="video-overlay" id="videoOverlay">
+      <div class="pulse-ring">📡</div>
+      <span id="overlayText">Menunggu partner...</span>
+    </div>
+  </div>
+
+  <!-- Controls -->
+  <div class="controls-bar">
+    <div class="controls-row">
+      <!-- Mute mic -->
+      <button class="ctrl-btn active" id="btnMic" onclick="toggleMic()">
+        <span class="icon">🎤</span>
+        <span id="micLabel">Mic On</span>
+      </button>
+
+      <!-- Speaker -->
+      <button class="ctrl-btn active" id="btnSpeaker" onclick="toggleSpeaker()">
+        <span class="icon">🔊</span>
+        <span id="speakerLabel">Speaker</span>
+      </button>
+
+      <!-- Flip camera -->
+      <button class="ctrl-btn" id="btnFlip" onclick="flipCamera()">
+        <span class="icon">🔄</span>
+        <span>Balik Cam</span>
+      </button>
+
+      <!-- Camera on/off -->
+      <button class="ctrl-btn active" id="btnCam" onclick="toggleCamera()">
+        <span class="icon">📷</span>
+        <span id="camLabel">Kamera</span>
+      </button>
+    </div>
+
+    <div class="controls-row">
+      <!-- Call / Hang up -->
+      <button class="ctrl-btn end-call-btn" id="btnCall" onclick="toggleCall()" style="min-width:140px">
+        <span class="icon" id="callIcon">📞</span>
+        <span id="callLabel">Mulai Pantau</span>
+      </button>
+
+      <!-- Notify partner -->
+      <button class="ctrl-btn" onclick="sendNotify()">
+        <span class="icon">🔔</span>
+        <span>Notif Partner</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- PWA Install Banner -->
+<div class="install-banner" id="installBanner">
+  <p><strong>Install SkripsiMonitor</strong><br>Pasang di HP untuk notifikasi background</p>
+  <button class="btn-install" onclick="doInstall()">Install</button>
+  <button class="btn-dismiss" onclick="dismissInstall()">✕</button>
+</div>
+
+<script>
+// ===== STATE =====
+let ws = null;
+let localStream = null;
+let peerConn = null;
+let myRole = 'userA';
+let myName = '';
+let roomId = '';
+let serverUrl = '';
+let isMicOn = true;
+let isCamOn = true;
+let isSpeakerOn = true;
+let isCalling = false;
+let facingMode = 'user'; // 'user' = depan, 'environment' = belakang
+let partnerOnline = false;
+let deferredInstall = null;
+let reconnectTimer = null;
+
+const ICE_SERVERS = {
+  iceServers: [
+    { urls: 'stun:stun.l.google.com:19302' },
+    { urls: 'stun:stun1.l.google.com:19302' },
+    { urls: 'stun:stun.relay.metered.ca:80' },
+    {
+      urls: 'turn:a.relay.metered.ca:80',
+      username: 'openrelayproject',
+      credential: 'openrelayproject'
+    },
+    {
+      urls: 'turn:a.relay.metered.ca:443',
+      username: 'openrelayproject',
+      credential: 'openrelayproject'
+    }
+  ]
+};
+
+// ===== UI HELPERS =====
+function showToast(msg, duration = 3000) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), duration);
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + id).classList.add('active');
+}
+
+function setStatus(online) {
+  document.getElementById('statusDot').className = 'status-dot' + (online ? ' online' : '');
+}
+
+function setPartnerStatus(online) {
+  partnerOnline = online;
+  document.getElementById('infoPartner').innerHTML = online
+    ? '<span class="badge green">🟢 Online</span>'
+    : '<span class="badge red">⭕ Offline</span>';
+  document.getElementById('connBanner').style.display = online ? 'none' : 'block';
+}
+
+function setAudioViz(active) {
+  const el = document.getElementById('audioViz');
+  el.className = 'audio-bar' + (active ? '' : ' audio-inactive');
+}
+
+function toggleInfo() {
+  const p = document.getElementById('infoPanel');
+  p.style.display = p.style.display === 'none' ? 'block' : 'none';
+}
+
+// ===== ROLE SELECTION =====
+function selectRole(role) {
+  myRole = role;
+  document.querySelectorAll('.role-tab').forEach(t => {
+    t.classList.toggle('selected', t.dataset.role === role);
+  });
+}
+
+// ===== LOGIN =====
+async function doLogin() {
+  const name = document.getElementById('inputName').value.trim();
+  const room = document.getElementById('inputRoom').value.trim();
+  const server = document.getElementById('inputServer').value.trim();
+
+  if (!name || !room || !server) {
+    showLoginError('Isi semua kolom terlebih dahulu');
+    return;
+  }
+
+  myName = name;
+  roomId = room;
+  serverUrl = server;
+
+  // Minta izin kamera & mic
+  try {
+    showLoginError('');
+    document.querySelector('.btn-primary').textContent = '⏳ Meminta izin kamera...';
+    localStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'user' },
+      audio: { echoCancellation: true, noiseSuppression: true }
+    });
+  } catch (err) {
+    showLoginError('❌ Izin kamera/mikrofon ditolak. Pastikan izinkan di browser.');
+    document.querySelector('.btn-primary').textContent = '🚀 Hubungkan';
+    return;
+  }
+
+  // Register Service Worker & minta izin notifikasi
+  registerSW();
+  requestNotifPermission();
+
+  // Tampilkan app screen
+  document.getElementById('headerName').textContent = `${name} (${myRole})`;
+  document.getElementById('headerRoom').textContent = `Room: ${room}`;
+  document.getElementById('infoRole').textContent = myRole;
+  document.getElementById('infoRoomId').textContent = room;
+  document.querySelector('.btn-primary').textContent = '🚀 Hubungkan';
+
+  showScreen('app');
+
+  // Tampilkan video lokal
+  document.getElementById('localVideo').srcObject = localStream;
+
+  // Hubungkan WS
+  connectWS();
+}
+
+function showLoginError(msg) {
+  const el = document.getElementById('loginError');
+  el.textContent = msg;
+  el.style.display = msg ? 'block' : 'none';
+}
+
+// ===== WEBSOCKET =====
+function connectWS() {
+  if (ws) ws.close();
+  setStatus(false);
+  document.getElementById('connBanner').style.display = 'block';
+  document.getElementById('connBanner').textContent = '⏳ Menghubungkan ke server...';
+
+  ws = new WebSocket(serverUrl);
+
+  ws.onopen = () => {
+    setStatus(true);
+    document.getElementById('connBanner').textContent = '⏳ Menunggu partner terhubung...';
+    showToast('✅ Terhubung ke server');
+    ws.send(JSON.stringify({ type: 'join', roomId, role: myRole, username: myName }));
+    startHeartbeat();
+  };
+
+  ws.onmessage = (e) => {
+    let msg;
+    try { msg = JSON.parse(e.data); } catch { return; }
+    handleSignal(msg);
+  };
+
+  ws.onclose = () => {
+    setStatus(false);
+    setPartnerStatus(false);
+    showToast('⚠️ Koneksi terputus, mencoba ulang...');
+    reconnectTimer = setTimeout(connectWS, 3000);
+  };
+
+  ws.onerror = () => {
+    showToast('❌ Gagal terhubung ke server');
+  };
+}
+
+let heartbeatInterval;
+function startHeartbeat() {
+  clearInterval(heartbeatInterval);
+  heartbeatInterval = setInterval(() => {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({ type: 'ping' }));
+    }
+  }, 20000);
+}
+
+// ===== SIGNALING =====
+async function handleSignal(msg) {
+  switch (msg.type) {
+    case 'joined':
+      showToast(`✅ Bergabung sebagai ${msg.role} di room ${msg.roomId}`);
+      break;
+
+    case 'error':
+      showToast('❌ ' + msg.message);
+      break;
+
+    case 'partner_online':
+      setPartnerStatus(true);
+      showToast(`🟢 Partner (${msg.username || msg.partnerRole}) online!`);
+      sendLocalNotif('Partner Online', `${msg.username || 'Partner'} sudah terhubung di room ${roomId}`);
+      // Jika userA, inisiasi offer
+      if (myRole === 'userA' && isCalling) {
+        await startCall();
+      }
+      break;
+
+    case 'partner_offline':
+      setPartnerStatus(false);
+      setAudioViz(false);
+      showToast(`⭕ Partner ${msg.username} offline`);
+      sendLocalNotif('Partner Offline', `${msg.username} terputus dari room`);
+      if (peerConn) { peerConn.close(); peerConn = null; }
+      document.getElementById('remoteVideo').srcObject = null;
+      document.getElementById('videoOverlay').style.display = 'flex';
+      document.getElementById('overlayText').textContent = 'Menunggu partner...';
+      break;
+
+    case 'offer':
+      await handleOffer(msg);
+      break;
+
+    case 'answer':
+      if (peerConn) await peerConn.setRemoteDescription(new RTCSessionDescription(msg.sdp));
+      break;
+
+    case 'ice_candidate':
+      if (peerConn && msg.candidate) {
+        try { await peerConn.addIceCandidate(new RTCIceCandidate(msg.candidate)); } catch {}
+      }
+      break;
+
+    case 'notify':
+      showToast(`🔔 ${msg.from}: ${msg.text}`);
+      sendLocalNotif(`Pesan dari ${msg.from}`, msg.text);
+      break;
+  }
+}
+
+// ===== WEBRTC =====
+function createPeer() {
+  if (peerConn) peerConn.close();
+  peerConn = new RTCPeerConnection(ICE_SERVERS);
+
+  // Tambahkan track lokal
+  if (localStream) {
+    localStream.getTracks().forEach(track => peerConn.addTrack(track, localStream));
+  }
+
+  // Terima stream remote
+  peerConn.ontrack = (e) => {
+    const remoteVid = document.getElementById('remoteVideo');
+    if (remoteVid.srcObject !== e.streams[0]) {
+      remoteVid.srcObject = e.streams[0];
+      document.getElementById('videoOverlay').style.display = 'none';
+      setAudioViz(true);
+      showToast('📹 Video partner terhubung');
+    }
+  };
+
+  // ICE candidate
+  peerConn.onicecandidate = (e) => {
+    if (e.candidate && ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({ type: 'ice_candidate', candidate: e.candidate }));
+    }
+  };
+
+  peerConn.onconnectionstatechange = () => {
+    const state = peerConn.connectionState;
+    if (state === 'connected') {
+      showToast('✅ WebRTC terhubung langsung');
+    } else if (state === 'failed' || state === 'disconnected') {
+      showToast('⚠️ Koneksi P2P terputus');
+      setAudioViz(false);
+    }
+  };
+
+  return peerConn;
+}
+
+async function startCall() {
+  createPeer();
+  const offer = await peerConn.createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: true });
+  await peerConn.setLocalDescription(offer);
+  ws.send(JSON.stringify({ type: 'offer', sdp: offer }));
+}
+
+async function handleOffer(msg) {
+  createPeer();
+  await peerConn.setRemoteDescription(new RTCSessionDescription(msg.sdp));
+  const answer = await peerConn.createAnswer();
+  await peerConn.setLocalDescription(answer);
+  ws.send(JSON.stringify({ type: 'answer', sdp: answer }));
+}
+
+// ===== CALL TOGGLE =====
+async function toggleCall() {
+  if (!isCalling) {
+    isCalling = true;
+    document.getElementById('callIcon').textContent = '📵';
+    document.getElementById('callLabel').textContent = 'Hentikan';
+    document.getElementById('btnCall').style.background = 'var(--red)';
+    document.getElementById('overlayText').textContent = 'Menghubungkan video...';
+    if (partnerOnline) await startCall();
+    else showToast('Menunggu partner online...');
+  } else {
+    isCalling = false;
+    document.getElementById('callIcon').textContent = '📞';
+    document.getElementById('callLabel').textContent = 'Mulai Pantau';
+    document.getElementById('btnCall').style.background = '';
+    if (peerConn) { peerConn.close(); peerConn = null; }
+    document.getElementById('remoteVideo').srcObject = null;
+    document.getElementById('videoOverlay').style.display = 'flex';
+    document.getElementById('overlayText').textContent = 'Pemantauan dihentikan';
+    setAudioViz(false);
+  }
+}
+
+// ===== CONTROLS =====
+function toggleMic() {
+  isMicOn = !isMicOn;
+  if (localStream) {
+    localStream.getAudioTracks().forEach(t => t.enabled = isMicOn);
+  }
+  const btn = document.getElementById('btnMic');
+  btn.className = 'ctrl-btn ' + (isMicOn ? 'active' : 'off');
+  document.getElementById('micLabel').textContent = isMicOn ? 'Mic On' : 'Mic Off';
+  document.querySelector('#btnMic .icon').textContent = isMicOn ? '🎤' : '🔇';
+}
+
+function toggleSpeaker() {
+  isSpeakerOn = !isSpeakerOn;
+  const remoteVid = document.getElementById('remoteVideo');
+  remoteVid.muted = !isSpeakerOn;
+  const btn = document.getElementById('btnSpeaker');
+  btn.className = 'ctrl-btn ' + (isSpeakerOn ? 'active' : 'off');
+  document.getElementById('speakerLabel').textContent = isSpeakerOn ? 'Speaker' : 'Bisu';
+  document.querySelector('#btnSpeaker .icon').textContent = isSpeakerOn ? '🔊' : '🔕';
+}
+
+function toggleCamera() {
+  isCamOn = !isCamOn;
+  if (localStream) {
+    localStream.getVideoTracks().forEach(t => t.enabled = isCamOn);
+  }
+  const btn = document.getElementById('btnCam');
+  btn.className = 'ctrl-btn ' + (isCamOn ? 'active' : 'off');
+  document.getElementById('camLabel').textContent = isCamOn ? 'Kamera' : 'Cam Off';
+  document.querySelector('#btnCam .icon').textContent = isCamOn ? '📷' : '🚫';
+}
+
+async function flipCamera() {
+  facingMode = facingMode === 'user' ? 'environment' : 'user';
+  showToast(`🔄 Beralih ke kamera ${facingMode === 'user' ? 'depan' : 'belakang'}`);
+
+  try {
+    const newStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode },
+      audio: { echoCancellation: true, noiseSuppression: true }
+    });
+
+    // Ganti track di peer connection
+    const newVideoTrack = newStream.getVideoTracks()[0];
+    if (peerConn) {
+      const sender = peerConn.getSenders().find(s => s.track && s.track.kind === 'video');
+      if (sender) await sender.replaceTrack(newVideoTrack);
+    }
+
+    // Stop track lama, ganti stream
+    if (localStream) localStream.getVideoTracks().forEach(t => t.stop());
+    localStream = newStream;
+    document.getElementById('localVideo').srcObject = localStream;
+  } catch (err) {
+    showToast('❌ Gagal ganti kamera: ' + err.message);
+    facingMode = facingMode === 'user' ? 'environment' : 'user';
+  }
+}
+
+function sendNotify() {
+  if (!ws || ws.readyState !== WebSocket.OPEN) {
+    showToast('❌ Tidak terhubung ke server');
+    return;
+  }
+  const messages = [
+    'Halo! Kamu dipantau 👀',
+    '⚠️ Perhatian! Ada pengawas aktif',
+    '📡 Pemantauan dimulai',
+    '🔔 Cek koneksi kamu'
+  ];
+  const text = messages[Math.floor(Math.random() * messages.length)];
+  ws.send(JSON.stringify({ type: 'notify', text }));
+  showToast('🔔 Notifikasi terkirim ke partner');
+}
+
+// ===== LOGOUT =====
+function doLogout() {
+  if (confirm('Keluar dari room?')) {
+    clearInterval(heartbeatInterval);
+    clearTimeout(reconnectTimer);
+    if (peerConn) { peerConn.close(); peerConn = null; }
+    if (localStream) { localStream.getTracks().forEach(t => t.stop()); localStream = null; }
+    if (ws) { ws.close(); ws = null; }
+    isCalling = false;
+    showScreen('login');
+  }
+}
+
+// ===== SERVICE WORKER =====
+function registerSW() {
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').then(reg => {
+      console.log('[SW] Registered');
+    }).catch(err => console.warn('[SW] Error:', err));
+  }
+}
+
+async function requestNotifPermission() {
+  if ('Notification' in window && Notification.permission === 'default') {
+    const result = await Notification.requestPermission();
+    if (result === 'granted') showToast('🔔 Notifikasi aktif');
+  }
+}
+
+function sendLocalNotif(title, body) {
+  if ('serviceWorker' in navigator && 'Notification' in window && Notification.permission === 'granted') {
+    navigator.serviceWorker.ready.then(reg => {
+      reg.active && reg.active.postMessage({ type: 'local_notify', title, body });
+    });
+  } else if ('Notification' in window && Notification.permission === 'granted') {
+    new Notification(title, { body, icon: '/icon-192.png' });
+  }
+}
+
+// ===== PWA INSTALL =====
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredInstall = e;
+  setTimeout(() => {
+    document.getElementById('installBanner').classList.add('show');
+  }, 5000);
+});
+
+function doInstall() {
+  if (deferredInstall) {
+    deferredInstall.prompt();
+    deferredInstall.userChoice.then(() => { deferredInstall = null; });
+  }
+  dismissInstall();
+}
+
+function dismissInstall() {
+  document.getElementById('installBanner').classList.remove('show');
+}
+
+// ===== INIT =====
+// Set default server URL hint
+document.getElementById('inputServer').value = 'ws://' + window.location.hostname + ':3000';
+</script>
+</body>
+</html>
